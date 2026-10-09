@@ -1,5 +1,5 @@
 -- ============================================
--- 🚀 NEXUS GUI - Estilo Dashboard + 20 Funções
+-- 🚀 NEXUS GUI - Dashboard Style + 20 Functions
 -- ============================================
 
 local Players = game:GetService("Players")
@@ -8,12 +8,13 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
 local StarterGui = game:GetService("StarterGui")
+local Debris = game:GetService("Debris")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = LocalPlayer:GetMouse()
 
--- ================= CORES DO TEMA =================
+-- ================= THEME COLORS =================
 local COLORS = {
     Background = Color3.fromRGB(10, 8, 20),
     Panel = Color3.fromRGB(18, 15, 30),
@@ -30,7 +31,7 @@ local COLORS = {
     Yellow = Color3.fromRGB(255, 200, 0),
 }
 
--- ================= VARIÁVEIS =================
+-- ================= STATE =================
 local State = {
     Noclip = false, Fly = false, SuperSpeed = false, InfiniteJump = false,
     HighJump = false, LowGravity = false, SuperGravity = false, Dash = false,
@@ -54,13 +55,13 @@ local Config = {
 
 local Original = { Speed = 16, Jump = 50, Gravity = workspace.Gravity }
 local FlyBodyVelocity, FlyBodyGyro, FlyConnection
-local NoclipConn, GodConn, FlingConn, AimbotConn, GravConn, StaminaConn
-local DoubleJumpCount = 0, TripleJumpCount = 0
+local NoclipConn, GodConn, FlingConn, AimbotConn, StaminaConn
+local DoubleJumpCount, TripleJumpCount = 0, 0
 local ESPObjects = {}
 local GodParts = {}
 local AirWalkPlatform
 
--- ================= GUI PRINCIPAL =================
+-- ================= MAIN GUI =================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "NexusGUI"
 ScreenGui.ResetOnSpawn = false
@@ -68,7 +69,7 @@ ScreenGui.IgnoreGuiInset = true
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Botão flutuante
+-- Floating toggle button
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 55, 0, 55)
 ToggleBtn.Position = UDim2.new(0, 20, 0.5, -27)
@@ -84,7 +85,7 @@ local tbStroke = Instance.new("UIStroke", ToggleBtn)
 tbStroke.Color = COLORS.Accent
 tbStroke.Thickness = 2
 
--- Frame Principal (Dashboard)
+-- Main Frame (Dashboard)
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 720, 0, 480)
 MainFrame.Position = UDim2.new(0.5, -360, 0.5, -240)
@@ -96,7 +97,6 @@ local mfStroke = Instance.new("UIStroke", MainFrame)
 mfStroke.Color = COLORS.AccentDark
 mfStroke.Thickness = 2
 
--- Gradiente de fundo
 local bgGrad = Instance.new("UIGradient")
 bgGrad.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 10, 30)),
@@ -114,7 +114,6 @@ Sidebar.BorderSizePixel = 0
 Sidebar.Parent = MainFrame
 Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 16)
 
--- Logo
 local LogoFrame = Instance.new("Frame")
 LogoFrame.Size = UDim2.new(1, -20, 0, 60)
 LogoFrame.Position = UDim2.new(0, 10, 0, 10)
@@ -131,7 +130,6 @@ Logo.Font = Enum.Font.GothamBold
 Logo.TextXAlignment = Enum.TextXAlignment.Left
 Logo.Parent = LogoFrame
 
--- Itens da sidebar
 local SidebarItems = {
     {name = "Dashboard", icon = "🏠"},
     {name = "Movement", icon = "🏃"},
@@ -152,10 +150,9 @@ local function CreateSidebarBtn(item, index)
     btn.AutoButtonColor = false
     btn.BorderSizePixel = 0
     btn.Parent = Sidebar
-    
-    local corner = Instance.new("UICorner", btn)
-    corner.CornerRadius = UDim.new(0, 8)
-    
+
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
     local icon = Instance.new("TextLabel")
     icon.Size = UDim2.new(0, 30, 1, 0)
     icon.Position = UDim2.new(0, 10, 0, 0)
@@ -165,7 +162,7 @@ local function CreateSidebarBtn(item, index)
     icon.Font = Enum.Font.GothamBold
     icon.TextXAlignment = Enum.TextXAlignment.Left
     icon.Parent = btn
-    
+
     local label = Instance.new("TextLabel")
     label.Size = UDim2.new(1, -50, 1, 0)
     label.Position = UDim2.new(0, 45, 0, 0)
@@ -176,7 +173,7 @@ local function CreateSidebarBtn(item, index)
     label.Font = Enum.Font.GothamSemibold
     label.TextXAlignment = Enum.TextXAlignment.Left
     label.Parent = btn
-    
+
     btn.MouseEnter:Connect(function()
         if not btn:GetAttribute("Active") then
             TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.7}):Play()
@@ -187,7 +184,7 @@ local function CreateSidebarBtn(item, index)
             TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
         end
     end)
-    
+
     return btn, icon, label
 end
 
@@ -196,7 +193,7 @@ for i, item in ipairs(SidebarItems) do
     SidebarButtons[item.name] = {button = btn, icon = icon, label = label}
 end
 
--- User info (embaixo da sidebar)
+-- User info
 local UserFrame = Instance.new("Frame")
 UserFrame.Size = UDim2.new(1, -20, 0, 50)
 UserFrame.Position = UDim2.new(0, 10, 1, -60)
@@ -236,14 +233,13 @@ UserStatus.Font = Enum.Font.Gotham
 UserStatus.TextXAlignment = Enum.TextXAlignment.Left
 UserStatus.Parent = UserFrame
 
--- ================= ÁREA DE CONTEÚDO =================
+-- ================= CONTENT AREA =================
 local Content = Instance.new("Frame")
 Content.Size = UDim2.new(1, -190, 1, -20)
 Content.Position = UDim2.new(0, 190, 0, 10)
 Content.BackgroundTransparency = 1
 Content.Parent = MainFrame
 
--- Header da content
 local ContentHeader = Instance.new("Frame")
 ContentHeader.Size = UDim2.new(1, 0, 0, 50)
 ContentHeader.BackgroundColor3 = COLORS.Panel
@@ -263,7 +259,6 @@ PageTitle.Font = Enum.Font.GothamBold
 PageTitle.TextXAlignment = Enum.TextXAlignment.Left
 PageTitle.Parent = ContentHeader
 
--- Botão minimizar
 local MinBtn = Instance.new("TextButton")
 MinBtn.Size = UDim2.new(0, 30, 0, 30)
 MinBtn.Position = UDim2.new(1, -75, 0, 10)
@@ -276,7 +271,6 @@ MinBtn.BorderSizePixel = 0
 MinBtn.Parent = ContentHeader
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(1, 0)
 
--- Botão fechar
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 30, 0, 30)
 CloseBtn.Position = UDim2.new(1, -40, 0, 10)
@@ -289,7 +283,7 @@ CloseBtn.BorderSizePixel = 0
 CloseBtn.Parent = ContentHeader
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(1, 0)
 
--- ================= PÁGINAS =================
+-- ================= PAGES =================
 local Pages = {}
 local function CreatePage(name)
     local page = Instance.new("ScrollingFrame")
@@ -303,13 +297,13 @@ local function CreatePage(name)
     page.AutomaticCanvasSize = Enum.AutomaticSize.Y
     page.Visible = false
     page.Parent = Content
-    
+
     local grid = Instance.new("UIGridLayout")
     grid.CellSize = UDim2.new(0, 165, 0, 110)
     grid.CellPadding = UDim2.new(0, 10, 0, 10)
     grid.SortOrder = Enum.SortOrder.LayoutOrder
     grid.Parent = page
-    
+
     Pages[name] = page
     return page
 end
@@ -318,22 +312,20 @@ for _, item in ipairs(SidebarItems) do
     CreatePage(item.name)
 end
 
--- ================= CARD DE TOGGLE =================
-local function CreateToggleCard(parent, name, desc, icon, config_key, callback)
+-- ================= TOGGLE CARD =================
+local function CreateToggleCard(parent, name, desc, icon, stateKey, callback)
     local card = Instance.new("Frame")
     card.Size = UDim2.new(0, 165, 0, 110)
     card.BackgroundColor3 = COLORS.Card
     card.BorderSizePixel = 0
     card.Parent = parent
-    
-    local corner = Instance.new("UICorner", card)
-    corner.CornerRadius = UDim.new(0, 12)
-    
+
+    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 12)
+
     local stroke = Instance.new("UIStroke", card)
     stroke.Color = COLORS.AccentDark
     stroke.Thickness = 1.5
-    
-    -- Ícone
+
     local iconLabel = Instance.new("TextLabel")
     iconLabel.Size = UDim2.new(0, 40, 0, 40)
     iconLabel.Position = UDim2.new(0, 12, 0, 12)
@@ -344,8 +336,7 @@ local function CreateToggleCard(parent, name, desc, icon, config_key, callback)
     iconLabel.BorderSizePixel = 0
     iconLabel.Parent = card
     Instance.new("UICorner", iconLabel).CornerRadius = UDim.new(0, 10)
-    
-    -- Nome
+
     local nameLabel = Instance.new("TextLabel")
     nameLabel.Size = UDim2.new(1, -65, 0, 20)
     nameLabel.Position = UDim2.new(0, 58, 0, 15)
@@ -356,8 +347,7 @@ local function CreateToggleCard(parent, name, desc, icon, config_key, callback)
     nameLabel.Font = Enum.Font.GothamBold
     nameLabel.TextXAlignment = Enum.TextXAlignment.Left
     nameLabel.Parent = card
-    
-    -- Descrição
+
     local descLabel = Instance.new("TextLabel")
     descLabel.Size = UDim2.new(1, -65, 0, 16)
     descLabel.Position = UDim2.new(0, 58, 0, 33)
@@ -368,8 +358,7 @@ local function CreateToggleCard(parent, name, desc, icon, config_key, callback)
     descLabel.Font = Enum.Font.Gotham
     descLabel.TextXAlignment = Enum.TextXAlignment.Left
     descLabel.Parent = card
-    
-    -- Botão toggle
+
     local toggleBg = Instance.new("Frame")
     toggleBg.Size = UDim2.new(1, -24, 0, 32)
     toggleBg.Position = UDim2.new(0, 12, 1, -44)
@@ -377,52 +366,52 @@ local function CreateToggleCard(parent, name, desc, icon, config_key, callback)
     toggleBg.BorderSizePixel = 0
     toggleBg.Parent = card
     Instance.new("UICorner", toggleBg).CornerRadius = UDim.new(0, 8)
-    
+
     local toggleTxt = Instance.new("TextLabel")
     toggleTxt.Size = UDim2.new(1, 0, 1, 0)
     toggleTxt.BackgroundTransparency = 1
-    toggleTxt.Text = "DESATIVADO"
+    toggleTxt.Text = "OFF"
     toggleTxt.TextColor3 = COLORS.TextDim
     toggleTxt.TextSize = 12
     toggleTxt.Font = Enum.Font.GothamBold
     toggleTxt.Parent = toggleBg
-    
+
     local toggleBtn = Instance.new("TextButton")
     toggleBtn.Size = UDim2.new(1, 0, 1, 0)
     toggleBtn.BackgroundTransparency = 1
     toggleBtn.Text = ""
     toggleBtn.Parent = toggleBg
-    
+
     local isActive = false
-    
+
     local function UpdateVisual()
         if isActive then
             TweenService:Create(toggleBg, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Accent}):Play()
             TweenService:Create(stroke, TweenInfo.new(0.2), {Color = COLORS.AccentLight}):Play()
-            toggleTxt.Text = "ATIVADO"
+            toggleTxt.Text = "ON"
             toggleTxt.TextColor3 = COLORS.Text
         else
             TweenService:Create(toggleBg, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.PanelLight}):Play()
             TweenService:Create(stroke, TweenInfo.new(0.2), {Color = COLORS.AccentDark}):Play()
-            toggleTxt.Text = "DESATIVADO"
+            toggleTxt.Text = "OFF"
             toggleTxt.TextColor3 = COLORS.TextDim
         end
     end
-    
+
     toggleBtn.MouseButton1Click:Connect(function()
         isActive = not isActive
-        if config_key then State[config_key] = isActive end
+        if stateKey then State[stateKey] = isActive end
         UpdateVisual()
         if callback then callback(isActive) end
     end)
-    
+
     card.MouseEnter:Connect(function()
         TweenService:Create(card, TweenInfo.new(0.15), {BackgroundColor3 = COLORS.CardHover}):Play()
     end)
     card.MouseLeave:Connect(function()
         TweenService:Create(card, TweenInfo.new(0.15), {BackgroundColor3 = COLORS.Card}):Play()
     end)
-    
+
     return card, toggleBtn
 end
 
@@ -434,20 +423,16 @@ local function ApplySpeed()
     if hum then hum.WalkSpeed = State.SuperSpeed and Config.SpeedValue or Original.Speed end
 end
 
--- JUMP (Infinite, High, Double, Triple, Bunny)
+-- JUMP
 local function ApplyJump()
     local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
     if hum then
-        if State.HighJump then
-            hum.UseJumpPower = true
-            hum.JumpPower = Config.JumpPower
-        else
-            hum.JumpPower = Original.Jump
-        end
+        hum.UseJumpPower = true
+        hum.JumpPower = State.HighJump and Config.JumpPower or Original.Jump
     end
 end
 
--- GRAVIDADE
+-- GRAVITY
 local function ApplyGravity()
     if State.LowGravity then
         workspace.Gravity = 20
@@ -516,12 +501,11 @@ end
 local function DoDash()
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
-    local dir = Camera.CFrame.LookVector
     local bv = Instance.new("BodyVelocity")
     bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    bv.Velocity = dir * Config.DashPower
+    bv.Velocity = Camera.CFrame.LookVector * Config.DashPower
     bv.Parent = hrp
-    game:GetService("Debris"):AddItem(bv, 0.2)
+    Debris:AddItem(bv, 0.2)
 end
 
 -- TELEPORT DASH
@@ -541,7 +525,9 @@ end
 -- SPRINT
 local function ApplySprint()
     local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    if hum then hum.WalkSpeed = State.Sprint and 32 or (State.SuperSpeed and Config.SpeedValue or Original.Speed) end
+    if hum then
+        hum.WalkSpeed = State.Sprint and 32 or (State.SuperSpeed and Config.SpeedValue or Original.Speed)
+    end
 end
 
 -- SLIDE
@@ -554,7 +540,7 @@ local function DoSlide()
     bv.MaxForce = Vector3.new(math.huge, 0, math.huge)
     bv.Velocity = Camera.CFrame.LookVector * 80
     bv.Parent = hrp
-    game:GetService("Debris"):AddItem(bv, 0.6)
+    Debris:AddItem(bv, 0.6)
     task.wait(0.6)
     hum.HipHeight = 2
 end
@@ -562,14 +548,13 @@ end
 -- AIR WALK
 local function ToggleAirWalk(state)
     if state then
-        local char = LocalPlayer.Character
-        if not char then return end
         AirWalkPlatform = Instance.new("Part")
         AirWalkPlatform.Size = Vector3.new(8, 1, 8)
         AirWalkPlatform.Anchored = true
         AirWalkPlatform.CanCollide = true
         AirWalkPlatform.Transparency = 0.7
         AirWalkPlatform.Color = COLORS.Accent
+        AirWalkPlatform.Material = Enum.Material.Neon
         AirWalkPlatform.Parent = workspace
     else
         if AirWalkPlatform then AirWalkPlatform:Destroy() AirWalkPlatform = nil end
@@ -585,7 +570,7 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- WALL WALK (simplificado - aplica velocidade na direção da parede)
+-- WALL WALK
 local function ToggleWallWalk(state)
     if state then
         RunService.Heartbeat:Connect(function()
@@ -603,7 +588,7 @@ local function ToggleWallWalk(state)
     end
 end
 
--- SPIDER MOVEMENT (teia)
+-- SPIDER MOVE
 local function ToggleSpiderMove(state)
     if state then
         UserInputService.InputBegan:Connect(function(input, gp)
@@ -619,14 +604,14 @@ local function ToggleSpiderMove(state)
                     bv.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
                     bv.Velocity = (pos - hrp.Position).Unit * 120
                     bv.Parent = hrp
-                    game:GetService("Debris"):AddItem(bv, 0.4)
+                    Debris:AddItem(bv, 0.4)
                 end
             end
         end)
     end
 end
 
--- DASH TELEPORT com F
+-- HOTKEYS
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Enum.KeyCode.F and State.Dash then DoDash() end
@@ -635,7 +620,7 @@ UserInputService.InputBegan:Connect(function(input, gp)
     if input.KeyCode == Enum.KeyCode.C and State.Slide then DoSlide() end
 end)
 
--- BUNNY HOP
+-- BUNNY HOP + INFINITE JUMP
 UserInputService.JumpRequest:Connect(function()
     if State.BunnyHop then
         local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -674,20 +659,18 @@ end)
 
 -- INFINITE STAMINA
 local function ToggleStamina(state)
-    if state then
-        if not StaminaConn then
-            StaminaConn = RunService.Heartbeat:Connect(function()
-                if not State.InfiniteStamina then return end
-                local char = LocalPlayer.Character
-                if char then
-                    for _, obj in pairs(char:GetDescendants()) do
-                        if obj:IsA("NumberValue") and obj.Name:lower():find("stamina") then
-                            obj.Value = obj.Value
-                        end
+    if state and not StaminaConn then
+        StaminaConn = RunService.Heartbeat:Connect(function()
+            if not State.InfiniteStamina then return end
+            local char = LocalPlayer.Character
+            if char then
+                for _, obj in pairs(char:GetDescendants()) do
+                    if obj:IsA("NumberValue") and obj.Name:lower():find("stamina") then
+                        obj.Value = obj.Value
                     end
                 end
-            end)
-        end
+            end
+        end)
     end
 end
 
@@ -836,62 +819,62 @@ local function StartAimbot()
     end)
 end
 
--- ================= POPULAR PÁGINAS =================
+-- ================= POPULATE PAGES =================
 
--- MOVEMENT (todas as funções que você pediu!)
+-- MOVEMENT
 local MovementPage = Pages["Movement"]
-CreateToggleCard(MovementPage, "Noclip", "Atravessar paredes", "👻", "Noclip", ToggleNoclip)
-CreateToggleCard(MovementPage, "Fly", "Voar pelo mapa", "🕊️", "Fly", function(v)
+CreateToggleCard(MovementPage, "Noclip", "Walk through walls", "👻", "Noclip", ToggleNoclip)
+CreateToggleCard(MovementPage, "Fly", "Fly across the map", "🕊️", "Fly", function(v)
     if v then StartFly() else StopFly() end
 end)
-CreateToggleCard(MovementPage, "Super Speed", "Correr muito rápido", "⚡", "SuperSpeed", ApplySpeed)
-CreateToggleCard(MovementPage, "Infinite Jump", "Pular infinitamente", "🦘", "InfiniteJump")
-CreateToggleCard(MovementPage, "High Jump", "Pular muito alto", "🦅", "HighJump", ApplyJump)
-CreateToggleCard(MovementPage, "Low Gravity", "Gravidade baixa", "🌙", "LowGravity", function(v)
+CreateToggleCard(MovementPage, "Super Speed", "Move very fast", "⚡", "SuperSpeed", ApplySpeed)
+CreateToggleCard(MovementPage, "Infinite Jump", "Jump forever", "🦘", "InfiniteJump")
+CreateToggleCard(MovementPage, "High Jump", "Jump very high", "🦅", "HighJump", ApplyJump)
+CreateToggleCard(MovementPage, "Low Gravity", "Reduce gravity", "🌙", "LowGravity", function(v)
     if v then State.SuperGravity = false end
     ApplyGravity()
 end)
-CreateToggleCard(MovementPage, "Super Gravity", "Gravidade alta", "🌍", "SuperGravity", function(v)
+CreateToggleCard(MovementPage, "Super Gravity", "Increase gravity", "🌍", "SuperGravity", function(v)
     if v then State.LowGravity = false end
     ApplyGravity()
 end)
-CreateToggleCard(MovementPage, "Dash (F)", "Avançar rapidamente", "💨", "Dash")
-CreateToggleCard(MovementPage, "Air Walk", "Andar no ar", "☁️", "AirWalk", ToggleAirWalk)
-CreateToggleCard(MovementPage, "Wall Walk", "Andar nas paredes", "🧗", "WallWalk", ToggleWallWalk)
-CreateToggleCard(MovementPage, "Teleport Dash (G)", "Avançar teleportando", "✨", "TeleportDash")
-CreateToggleCard(MovementPage, "Double Jump", "Pulo duplo", "2️⃣", "DoubleJump")
-CreateToggleCard(MovementPage, "Triple Jump", "Pulo triplo", "3️⃣", "TripleJump")
-CreateToggleCard(MovementPage, "Bunny Hop", "Saltos rápidos", "🐰", "BunnyHop")
-CreateToggleCard(MovementPage, "Slide (C)", "Deslizar no chão", "🛹", "Slide")
-CreateToggleCard(MovementPage, "Sprint", "Corrida extra", "🏃", "Sprint", ApplySprint)
-CreateToggleCard(MovementPage, "Long Jump (H)", "Salto longo", "🚀", "LongJump")
-CreateToggleCard(MovementPage, "Infinite Stamina", "Energia infinita", "🔋", "InfiniteStamina", ToggleStamina)
-CreateToggleCard(MovementPage, "Swim Boost", "Nadar mais rápido", "🏊", "SwimBoost", ToggleSwim)
-CreateToggleCard(MovementPage, "Spider Move (Q)", "Teia estilo Homem-Aranha", "🕷️", "SpiderMove", ToggleSpiderMove)
+CreateToggleCard(MovementPage, "Dash [F]", "Quick forward burst", "💨", "Dash")
+CreateToggleCard(MovementPage, "Air Walk", "Walk on air", "☁️", "AirWalk", ToggleAirWalk)
+CreateToggleCard(MovementPage, "Wall Walk", "Walk up walls", "🧗", "WallWalk", ToggleWallWalk)
+CreateToggleCard(MovementPage, "Teleport Dash [G]", "Teleport forward", "✨", "TeleportDash")
+CreateToggleCard(MovementPage, "Double Jump", "Jump twice", "2️⃣", "DoubleJump")
+CreateToggleCard(MovementPage, "Triple Jump", "Jump three times", "3️⃣", "TripleJump")
+CreateToggleCard(MovementPage, "Bunny Hop", "Fast chained jumps", "🐰", "BunnyHop")
+CreateToggleCard(MovementPage, "Slide [C]", "Slide on ground", "🛹", "Slide")
+CreateToggleCard(MovementPage, "Sprint", "Extra running speed", "🏃", "Sprint", ApplySprint)
+CreateToggleCard(MovementPage, "Long Jump [H]", "Long distance jump", "🚀", "LongJump")
+CreateToggleCard(MovementPage, "Infinite Stamina", "Endless stamina", "🔋", "InfiniteStamina", ToggleStamina)
+CreateToggleCard(MovementPage, "Swim Boost", "Faster swimming", "🏊", "SwimBoost", ToggleSwim)
+CreateToggleCard(MovementPage, "Spider Move [Q]", "Web swing like Spider-Man", "🕷️", "SpiderMove", ToggleSpiderMove)
 
 -- COMBAT
 local CombatPage = Pages["Combat"]
-CreateToggleCard(CombatPage, "Aimbot", "Segure E/Dir.", "🎯", "Aimbot", function(v) if v then StartAimbot() end end)
-CreateToggleCard(CombatPage, "Fling", "Arremessar jogadores", "💥", "Fling", ToggleFling)
-CreateToggleCard(CombatPage, "Godmode", "Vida infinita", "🛡️", "Godmode", ToggleGod)
-CreateToggleCard(CombatPage, "Click TP", "Teleporte ao clicar", "🖱️", "ClickTP")
+CreateToggleCard(CombatPage, "Aimbot", "Hold E / RMB", "🎯", "Aimbot", function(v) if v then StartAimbot() end end)
+CreateToggleCard(CombatPage, "Fling", "Fling nearby players", "💥", "Fling", ToggleFling)
+CreateToggleCard(CombatPage, "Godmode", "Infinite health", "🛡️", "Godmode", ToggleGod)
+CreateToggleCard(CombatPage, "Click TP", "Teleport on click", "🖱️", "ClickTP")
 
 -- VISUAL
 local VisualPage = Pages["Visual"]
-CreateToggleCard(VisualPage, "ESP", "Contorno nos players", "👁️", "ESP", function() UpdateESP() end)
-CreateToggleCard(VisualPage, "Fullbright", "Iluminar o mapa", "💡", "Fullbright", ToggleFB)
+CreateToggleCard(VisualPage, "ESP", "Highlight players", "👁️", "ESP", function() UpdateESP() end)
+CreateToggleCard(VisualPage, "Fullbright", "Light up the map", "💡", "Fullbright", ToggleFB)
 
 -- MISC
 local MiscPage = Pages["Misc"]
-local ResetCard = CreateToggleCard(MiscPage, "Reset", "Resetar personagem", "💀", nil, function()
+CreateToggleCard(MiscPage, "Reset", "Reset character", "💀", nil, function()
     if LocalPlayer.Character then LocalPlayer.Character:BreakJoints() end
 end)
 
 -- SETTINGS
 local SettingsPage = Pages["Settings"]
-CreateToggleCard(SettingsPage, "Speed: " .. Config.SpeedValue, "Aumentar/diminuir", "⚙️", nil, nil)
+CreateToggleCard(SettingsPage, "Speed: " .. Config.SpeedValue, "Adjust speed", "⚙️", nil, nil)
 
--- ================= NAVEGAÇÃO =================
+-- ================= NAVIGATION =================
 local currentPage = "Dashboard"
 
 local function ShowPage(name)
@@ -957,11 +940,11 @@ RunService.RenderStepped:Connect(function()
     if State.ESP then UpdateESP() end
 end)
 
--- Notificação
+-- Startup notification
 StarterGui:SetCore("SendNotification", {
     Title = "🚀 NEXUS GUI",
-    Text = "Carregada com sucesso! 20+ funções disponíveis.",
+    Text = "Loaded successfully! 20+ functions available.",
     Duration = 5
 })
 
-print("✅ NEXUS GUI carregada!")
+print("✅ NEXUS GUI loaded!")
