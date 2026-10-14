@@ -1,0 +1,210 @@
+-- Amendoin's Hub Premium
+-- SPIDER GEN / template para Roblox Studio
+-- Jogo alvo: Steal an Egg
+-- Uso: experiência própria ou autorização explícita do criador
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local theme = {
+    background = Color3.fromRGB(10, 14, 20),
+    cyan = Color3.fromRGB(0, 240, 255),
+    green = Color3.fromRGB(0, 255, 157),
+    text = Color3.fromRGB(255, 255, 255),
+    muted = Color3.fromRGB(150, 165, 180),
+}
+
+local FULL_SIZE = UDim2.fromOffset(420, 430)
+local MINI_SIZE = UDim2.fromOffset(280, 70)
+
+local screen = Instance.new("ScreenGui")
+screen.Name = "SpiderGenPanel"
+screen.ResetOnSpawn = false
+screen.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screen.Parent = playerGui
+
+local main = Instance.new("Frame")
+main.Name = "MainFrame"
+main.Size = FULL_SIZE
+main.Position = UDim2.new(0.5, -210, 0.5, -215)
+main.BackgroundColor3 = theme.background
+main.BackgroundTransparency = 0.1
+main.BorderSizePixel = 0
+main.Parent = screen
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = main
+local stroke = Instance.new("UIStroke")
+stroke.Color = theme.cyan
+stroke.Thickness = 1.5
+stroke.Transparency = 0.15
+stroke.Parent = main
+
+local padding = Instance.new("UIPadding")
+padding.PaddingTop = UDim.new(0, 18)
+padding.PaddingBottom = UDim.new(0, 18)
+padding.PaddingLeft = UDim.new(0, 18)
+padding.PaddingRight = UDim.new(0, 18)
+padding.Parent = main
+
+-- Fundo com imagem (criado primeiro para ficar atrás de tudo)
+local bg = Instance.new("ImageLabel")
+bg.Name = "Background"
+bg.BackgroundTransparency = 1
+bg.Image = "rbxassetid://109419587078974"
+bg.ImageTransparency = 0.25
+bg.ScaleType = Enum.ScaleType.Crop
+bg.Position = UDim2.fromOffset(-18, -18) -- compensa o UIPadding
+bg.Size = UDim2.new(1, 36, 1, 36)
+bg.Parent = main
+Instance.new("UICorner", bg).CornerRadius = UDim.new(0, 12)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -76, 0, 34)
+title.BackgroundTransparency = 1
+title.Text = "🕷  SPIDER GEN"
+title.TextColor3 = theme.cyan
+title.TextSize = 20
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = main
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.fromOffset(32, 32)
+close.Position = UDim2.new(1, -32, 0, 0)
+close.BackgroundColor3 = Color3.fromRGB(42, 42, 58)
+close.Text = "×"
+close.TextColor3 = theme.text
+close.TextSize = 22
+close.Font = Enum.Font.GothamBold
+close.Parent = main
+Instance.new("UICorner", close).CornerRadius = UDim.new(0, 8)
+close.Activated:Connect(function() screen.Enabled = false end)
+
+local minimize = Instance.new("TextButton")
+minimize.Size = UDim2.fromOffset(32, 32)
+minimize.Position = UDim2.new(1, -72, 0, 0)
+minimize.BackgroundColor3 = Color3.fromRGB(42, 42, 58)
+minimize.Text = "–"
+minimize.TextColor3 = theme.text
+minimize.TextSize = 22
+minimize.Font = Enum.Font.GothamBold
+minimize.Parent = main
+Instance.new("UICorner", minimize).CornerRadius = UDim.new(0, 8)
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, 0, 0, 28)
+status.Position = UDim2.fromOffset(0, 42)
+status.BackgroundTransparency = 1
+status.Text = "●  PRONTO  /  Responsivo"
+status.TextColor3 = theme.green
+status.TextSize = 13
+status.Font = Enum.Font.Code
+status.TextXAlignment = Enum.TextXAlignment.Left
+status.Parent = main
+
+local description = Instance.new("TextLabel")
+description.Size = UDim2.new(1, 0, 0, 46)
+description.Position = UDim2.fromOffset(0, 76)
+description.BackgroundTransparency = 1
+description.Text = "Criar um painel para acompanhar o estado da minha experiência, alternar preferências visuais e mostrar notificações úteis."
+description.TextColor3 = theme.muted
+description.TextSize = 13
+description.TextWrapped = true
+description.Font = Enum.Font.Gotham
+description.TextXAlignment = Enum.TextXAlignment.Left
+description.Parent = main
+
+local scroll = Instance.new("ScrollingFrame")
+scroll.Name = "Options"
+scroll.Size = UDim2.new(1, 0, 1, -154)
+scroll.Position = UDim2.fromOffset(0, 132)
+scroll.BackgroundTransparency = 1
+scroll.BorderSizePixel = 0
+scroll.ScrollBarThickness = 3
+scroll.ScrollBarImageColor3 = theme.cyan
+scroll.CanvasSize = UDim2.fromOffset(0, 0)
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scroll.Parent = main
+local list = Instance.new("UIListLayout")
+list.Padding = UDim.new(0, 8)
+list.SortOrder = Enum.SortOrder.LayoutOrder
+list.Parent = scroll
+
+local function addToggle(label, defaultOn)
+    local row = Instance.new("TextButton")
+    row.Size = UDim2.new(1, -6, 0, 46)
+    row.BackgroundColor3 = defaultOn and Color3.fromRGB(18, 64, 58) or Color3.fromRGB(42, 42, 58)
+    row.Text = (defaultOn and "ON  " or "OFF ") .. label
+    row.TextColor3 = theme.text
+    row.TextSize = 14
+    row.Font = Enum.Font.GothamMedium
+    row.TextXAlignment = Enum.TextXAlignment.Left
+    row.Parent = scroll
+    Instance.new("UICorner", row).CornerRadius = UDim.new(0, 9)
+    row.Activated:Connect(function()
+        defaultOn = not defaultOn
+        row.Text = (defaultOn and "ON  " or "OFF ") .. label
+        row.BackgroundColor3 = defaultOn and Color3.fromRGB(18, 64, 58) or Color3.fromRGB(42, 42, 58)
+    end)
+end
+
+addToggle("Mostrar status da experiência", true)
+addToggle("Animar transições do painel", true)
+addToggle("Salvar preferências locais", false)
+
+local footer = Instance.new("TextLabel")
+footer.Size = UDim2.new(1, 0, 0, 20)
+footer.Position = UDim2.new(0, 0, 1, -22)
+footer.BackgroundTransparency = 1
+footer.Text = "SPIDER GEN • v1.0 • Studio tooling"
+footer.TextColor3 = theme.muted
+footer.TextSize = 11
+footer.Font = Enum.Font.Code
+footer.Parent = main
+
+-- Minimizar / restaurar
+local minimized = false
+local body = {status, description, scroll, footer}
+
+minimize.Activated:Connect(function()
+    minimized = not minimized
+    if minimized then
+        for _, obj in ipairs(body) do obj.Visible = false end
+        minimize.Text = "+"
+    else
+        for _, obj in ipairs(body) do obj.Visible = true end
+        minimize.Text = "–"
+    end
+    TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+        Size = minimized and MINI_SIZE or FULL_SIZE
+    }):Play()
+end)
+
+-- Arrastar
+local dragging = false
+local dragStart, startPos
+main.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = main.Position
+    end
+end)
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+end)
+
+main.Position = main.Position + UDim2.fromOffset(0, 18)
+TweenService:Create(main, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, -210, 0.5, -215)}):Play()
+print("[SPIDER GEN] Template 1 carregado para uso autorizado no Roblox Studio")
